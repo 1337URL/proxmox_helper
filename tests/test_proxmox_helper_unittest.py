@@ -1,16 +1,18 @@
 # tests/test_proxmox_helper_unittest.py
 # type: ignore
+"""Test module"""
 import unittest
 from unittest.mock import Mock, call
-from proxmox_helper import proxmox_helper
 from pathlib import PurePosixPath
+from proxmoxer.core import ResourceException
+from proxmox_helper import ProxmoxHelper
 
 class TestProxmoxHelper(unittest.TestCase):
     """All tests for proxmox_helper – same assertions as the pytest version."""
 
     def setUp(self):
         """Create a helper instance and mock its network attributes."""
-        self.helper = proxmox_helper(backend="local")
+        self.helper = ProxmoxHelper(backend="local")
         self.helper.nodes = Mock()
         self.helper.cluster = Mock()
 
@@ -100,6 +102,15 @@ class TestProxmoxHelper(unittest.TestCase):
         config = self.helper.get_config_qemu_vm("test_node", "VM1")
         self.assertEqual(config, {"test_key":"test_value"})
 
+    def test_get_ip_qemu_vm(self):
+        self.helper.get_qemu_vms = Mock(return_value={"VM1": 100, "VM2": 200})
+        self.helper.wait_for_qemu_agent_id = Mock(return_value = None)
+        self.helper.run_commands_vm_id = Mock(return_value = {'exited': 1, 'out-data': '192.168.11.1', 'exitcode': 0})
+        self.helper.get_ip_qemu_vm("test_node", "VM1", "BC:24:11:05:35:8A")
+        test_data = "printf \"%s\" $((ip -4 -o address show dev $(ip -o link show | grep -i BC:24:11:05:35:8A | awk '{print $2}' | cut -d: -f1) 2> /dev/null || exit ) | "
+        test_data += "awk '{print $4}' | cut -d/ -f1)"
+        self.helper.run_commands_vm_id.assert_called_once_with("test_node", 100, [test_data])
+
     def test_delete_qemu_vms(self):
         self.helper.get_qemu_vms = Mock(return_value={"VM1": 100, "VM2": 200})
         self.helper.ensure_state_qemu_vm_id = Mock(return_value= True)
@@ -168,7 +179,9 @@ class TestProxmoxHelper(unittest.TestCase):
         self.helper.vm_name_to_id = Mock(return_value=100)
         self.helper.wait_for_qemu_agent("test_node", "VM1")
         self.helper.nodes.return_value.qemu.return_value.agent.ping.post.assert_called_once()
-        self.helper.nodes.return_value.qemu.return_value.agent.ping.post.side_effect = Exception("500 Internal Server Error: QEMU guest agent is not running")
+        self.helper.nodes.return_value.qemu.return_value.agent.ping.post.side_effect = ResourceException(status_code=500,
+                                                                                                         status_message="Internal Server Error",
+                                                                                                         content="QEMU guest agent is not running")
         with self.assertRaises(Exception) as cm:
             self.helper.wait_for_qemu_agent("test_node", "VM1", poll_timeout=0)
         self.assertIn("VM with id:100 timed out while waiting for qemu agent.", str(cm.exception))
@@ -220,8 +233,9 @@ class TestProxmoxHelper(unittest.TestCase):
     def test_write_file_to_vm(self):
         self.helper.vm_name_to_id = Mock(return_value=100)
         self.helper.write_file_to_vm("test_node", "test-vm", "/test", bytes(range(256)))
-        file_B64 = 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w=='
-        self.helper.nodes.return_value.qemu.return_value.agent.return_value.post.assert_called_once_with(file='/test', content=file_B64, encode=0)
+        file_b64 = """AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn
+        +AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w=="""
+        self.helper.nodes.return_value.qemu.return_value.agent.return_value.post.assert_called_once_with(file='/test', content=file_b64, encode=0)
         self.helper.nodes.reset_mock()
         self.helper.write_file_to_vm("test_node", "test-vm", "/test", "dGVzdA==")
         self.helper.nodes.return_value.qemu.return_value.agent.return_value.post.assert_called_once_with(file='/test', content='dGVzdA==', encode=0)
