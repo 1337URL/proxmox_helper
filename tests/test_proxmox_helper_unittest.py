@@ -234,7 +234,8 @@ class TestProxmoxHelper(unittest.TestCase):
         self.helper.vm_name_to_id = Mock(return_value=100)
         self.helper.write_file_to_vm("test_node", "test-vm", "/test", bytes(range(256)))
         file_b64 = """AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn
-        +AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w=="""
+        +AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycr
+        LzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==""".replace("\n", "").replace(" ", "")
         self.helper.nodes.return_value.qemu.return_value.agent.return_value.post.assert_called_once_with(file='/test', content=file_b64, encode=0)
         self.helper.nodes.reset_mock()
         self.helper.write_file_to_vm("test_node", "test-vm", "/test", "dGVzdA==")
