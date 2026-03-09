@@ -11,7 +11,7 @@ cat << 'EOF' > python3-proxmox-helper/DEBIAN/control
 Package: python3-proxmox-helper
 Version: 1.0.0
 Architecture: all
-Depends: python3-proxmoxer (>=2.2.0-1), python3:any
+Depends: python3-proxmoxer (>=2.0.0), python3:any
 Maintainer: Urho Laurinen <url.sequel@gmail.com>
 Description: Some helpful proxmox functions 
 EOF
