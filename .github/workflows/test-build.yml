@@ -29,6 +29,8 @@ jobs:
     - name: Try to import
       run: |
         apt list python3-proxmoxer
+        ls -la /usr/lib/python3/dist-packages
+        python3 -c "import sys; print(sys.path)"
         python3 -c "from proxmoxer import ProxmoxAPI"
         python3 -c "from proxmox_helper import ProxmoxHelper"
     
