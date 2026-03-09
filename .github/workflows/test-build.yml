@@ -29,4 +29,6 @@ jobs:
     - name: Try to import
       run: |
         python3 -c "from proxmox_helper import ProxmoxHelper"
-    
+    - name: Setup tmate session
+      if: success() || failure()
+      uses: mxschmitt/action-tmate@v3
