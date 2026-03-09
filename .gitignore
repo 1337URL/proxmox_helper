@@ -208,3 +208,6 @@ __marimo__/
 
 # VScode
 .vscode/
+
+# build.sh
+*.deb
