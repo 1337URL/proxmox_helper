@@ -28,6 +28,7 @@ jobs:
         sudo apt install ./python3-proxmox-helper.deb
     - name: Try to import
       run: |
+        apt list python3-proxmoxer
         python3 -c "from proxmoxer import ProxmoxAPI"
         python3 -c "from proxmox_helper import ProxmoxHelper"
     
